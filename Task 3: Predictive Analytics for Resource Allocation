@@ -1,0 +1,98 @@
+# Jupyter Notebook Code for Predictive Analytics
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import accuracy_score, f1_score, classification_report
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load and preprocess data
+def load_and_preprocess_data():
+    # Using breast cancer dataset as specified
+    from sklearn.datasets import load_breast_cancer
+    data = load_breast_cancer()
+    
+    df = pd.DataFrame(data.data, columns=data.feature_names)
+    df['target'] = data.target
+    
+    # Convert to multi-class problem for priority prediction (high/medium/low)
+    # Simulating issue priority based on tumor characteristics
+    df['priority'] = np.where(df['worst radius'] > 20, 'high',
+                             np.where(df['worst radius'] > 15, 'medium', 'low'))
+    
+    return df
+
+def preprocess_data(df):
+    # Handle missing values
+    df = df.dropna()
+    
+    # Encode categorical variables
+    le = LabelEncoder()
+    df['priority_encoded'] = le.fit_transform(df['priority'])
+    
+    # Feature selection
+    features = [col for col in df.columns if col not in ['priority', 'priority_encoded', 'target']]
+    X = df[features]
+    y = df['priority_encoded']
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    
+    # Scale features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    return X_train_scaled, X_test_scaled, y_train, y_test, le, features
+
+def train_and_evaluate_model(X_train, X_test, y_train, y_test, le):
+    # Train Random Forest model
+    rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf_model.fit(X_train, y_train)
+    
+    # Predictions
+    y_pred = rf_model.predict(X_test)
+    
+    # Evaluation metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    
+    print("Model Performance:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"F1-Score: {f1:.4f}")
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred, target_names=le.classes_))
+    
+    # Feature importance
+    feature_importance = pd.DataFrame({
+        'feature': features,
+        'importance': rf_model.feature_importances_
+    }).sort_values('importance', ascending=False)
+    
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=feature_importance.head(10), x='importance', y='feature')
+    plt.title('Top 10 Feature Importances')
+    plt.tight_layout()
+    plt.show()
+    
+    return rf_model, accuracy, f1
+
+# Main execution
+if __name__ == "__main__":
+    # Load data
+    df = load_and_preprocess_data()
+    print("Dataset shape:", df.shape)
+    print("\nPriority distribution:")
+    print(df['priority'].value_counts())
+    
+    # Preprocess
+    X_train, X_test, y_train, y_test, le, features = preprocess_data(df)
+    
+    # Train model
+    model, accuracy, f1 = train_and_evaluate_model(X_train, X_test, y_train, y_test, le)
+    
+    print(f"\nFinal Performance Metrics:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"F1-Score: {f1:.4f}")
