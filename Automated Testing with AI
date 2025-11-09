@@ -1,0 +1,71 @@
+# Selenium Test Script with AI enhancements
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+class LoginPageTest:
+    def __init__(self):
+        self.driver = webdriver.Chrome()
+        self.wait = WebDriverWait(self.driver, 10)
+    
+    def test_valid_login(self):
+        try:
+            self.driver.get("https://example.com/login")
+            
+            # AI-suggested element selection
+            username_field = self.wait.until(EC.presence_of_element_located((By.ID, "username")))
+            password_field = self.driver.find_element(By.ID, "password")
+            login_button = self.driver.find_element(By.ID, "login-btn")
+            
+            # Test valid credentials
+            username_field.send_keys("valid_user")
+            password_field.send_keys("correct_password")
+            login_button.click()
+            
+            # Verify successful login
+            welcome_message = self.wait.until(EC.presence_of_element_located((By.ID, "welcome")))
+            print("✓ Valid login test passed")
+            return True
+            
+        except Exception as e:
+            print(f"✗ Valid login test failed: {e}")
+            return False
+    
+    def test_invalid_login(self):
+        try:
+            self.driver.get("https://example.com/login")
+            
+            username_field = self.wait.until(EC.presence_of_element_located((By.ID, "username")))
+            password_field = self.driver.find_element(By.ID, "password")
+            login_button = self.driver.find_element(By.ID, "login-btn")
+            
+            # Test invalid credentials
+            username_field.send_keys("invalid_user")
+            password_field.send_keys("wrong_password")
+            login_button.click()
+            
+            # Verify error message
+            error_message = self.wait.until(EC.presence_of_element_located((By.ID, "error")))
+            print("✓ Invalid login test passed")
+            return True
+            
+        except Exception as e:
+            print(f"✗ Invalid login test failed: {e}")
+            return False
+    
+    def run_tests(self):
+        results = {
+            'valid_login': self.test_valid_login(),
+            'invalid_login': self.test_invalid_login()
+        }
+        success_rate = (sum(results.values()) / len(results)) * 100
+        print(f"\nTest Results: {results}")
+        print(f"Success Rate: {success_rate}%")
+        self.driver.quit()
+        return results
+
+# Run tests
+test_suite = LoginPageTest()
+test_suite.run_tests()
